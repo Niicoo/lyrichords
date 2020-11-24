@@ -1,7 +1,7 @@
 A simple command line python script to draw lyrics with Ukulele chords.
 
-![Example](./examples/angel.png "Example: Angel - Jack Johnson")
-
+![Example1](./examples/angel.png "Example: Angel - Jack Johnson")
+![Example2](./examples/city_of_stars.png "Example: City Of Stars - LaLaLand")
 
 # Configuration
 Create conda environment:  
