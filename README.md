@@ -17,6 +17,7 @@ _(You can type: `python lyrichords.py --help` to get more help on the commands)_
 
 
 # My to-do list  
+- Use multiple subplots for each part of the pdf (lyrics, title, chords...), instead of what I did with one subplot, which is a complicated and an ugly way at the same time... (look at the bottom of SongDrawer.py)
 - Add feature: choose between writting sharp or flat chords (eg: C# instead of Db, etc...)  
 - Add feature: multiple column of lyrics on the same page  
 - Take into account chords before the lyrics starts (For the moment, the minimum chord position is the first letter of the lyrics)  
