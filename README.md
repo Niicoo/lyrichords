@@ -34,6 +34,6 @@ Default instrument: Ukulele (GCEA tuning) + background + custom parameters:
 `python LyricsChords.py ./examples/city_of_stars.txt --page_format A4 --background ./examples/lalaland_background.jpg --lyrics_line_spacing 8 --title_height 35`  
 ![Example2](./examples/city_of_stars.png "Example: City Of Stars - LaLaLand")  
 
-Samller page format:  
+Smaller page format:  
 `python LyricsChords.py ./examples/angel.txt --page_format A5`  
 ![Example3](./examples/angel.png "Example: Angel - Jack Johnson")
