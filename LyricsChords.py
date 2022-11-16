@@ -17,7 +17,7 @@ from collections.abc import Iterable
 from typing import Tuple
 
 # Get Logger
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 def savefig2PDF(
         figs: Iterable[Figure],
