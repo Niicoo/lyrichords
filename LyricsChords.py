@@ -86,7 +86,7 @@ if __name__ == "__main__":
         help="Opcity of the background [if present], [0: transparent, 1: opaque]"
     )
     parser.add_argument("--title_height", type=float, required=False,
-        default=25,
+        default=25.,
         help="Height reserved to plot the title in millimeters"
     )
     parser.add_argument("--title_fontfamily", type=str, required=False,
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         help="Font used for the title [you can add your own font in the ./liblyrichords/fonts folder]"
     )
     parser.add_argument("--title_fontsize", type=float, required=False,
-        default=30,
+        default=30.,
         help="Size of the title font"
     )
     parser.add_argument("--composer_fontfamily", type=str, required=False,
@@ -102,11 +102,11 @@ if __name__ == "__main__":
         help="Font used for the composer [you can add your own font in the ./liblyrichords/fonts folder]"
     )
     parser.add_argument("--composer_fontsize", type=float, required=False,
-        default=10,
+        default=10.,
         help="Size of the composer font"
     )
     parser.add_argument("--chords_fontsize", type=float, required=False,
-        default=8,
+        default=8.,
         help="Size of the chords names font"
     )
     parser.add_argument("--chords_fret_spacing", type=float, required=False,
@@ -134,15 +134,15 @@ if __name__ == "__main__":
         help="Chords design: radius of the finger in millimeters"
     )
     parser.add_argument("--chords_margin", type=float, required=False,
-        default=4,
+        default=4.,
         help="Chords design: margin arround each chords in millimeters"
     )
     parser.add_argument("--lyrics_line_spacing", type=float, required=False,
-        default=10,
+        default=10.,
         help="Lyrics design: space between each text line in millimeters"
     )
     parser.add_argument("--lyrics_chords_fontsize", type=float, required=False,
-        default=6,
+        default=6.,
         help="Lyrics design: size of the font used for the inline chords names"
     )
     parser.add_argument("--lyrics_fontfamily", type=str, required=False,
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         help="Lyrics design: font to use for the lyrics [you can add your own font in the ./liblyrichords/fonts folder]"
     )
     parser.add_argument("--lyrics_fontsize", type=float, required=False,
-        default=10,
+        default=10.,
         help="Lyrics design: size of the font used for the lyrics"
     )
     parser.add_argument("--lyrics_ha", type=str, required=False,
