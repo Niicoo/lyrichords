@@ -2,7 +2,7 @@ A simple command line python script to draw lyrics with Ukulele/Guitar chords.
 
 # Configuration
 Create conda environment:  
-`conda env create -f env_prereqs.yaml`
+`conda env create -f environment.yaml`
 
 
 # Usage
