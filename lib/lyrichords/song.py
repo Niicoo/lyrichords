@@ -177,6 +177,7 @@ class Song():
         return self.verses
 
     def isChordsLine(line: str) -> bool:
+        # Here I should remove all character such as: , - _
         for word in line.split():
             try:
                 Chord.parse(word)
@@ -185,6 +186,7 @@ class Song():
         return True
 
     def fromFile(path: str, lyrics_first: bool = False) -> "Song":
+        logger.info(f"Parsing File: {path}")
         # Read the file
         with open(path, "r") as f:
             content = f.read()
@@ -205,7 +207,9 @@ class Song():
             # IF Line is metadata (Capo, Title, etc...)
             if(len(line) > 5):
                 if(line[0:5].upper() == "CAPO:"):
-                    song.setCapo(int(line[5:].strip()))
+                    capo_str = line[5:].strip()
+                    if capo_str == '': continue
+                    song.setCapo(int(capo_str))
                     continue
             if(len(line) > 6):
                 if(line[0:6].upper() == "TITLE:"):

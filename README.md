@@ -19,6 +19,7 @@ _(You can type: `python LyricsChords.py --help` to get more help on the commands
 - Add others uncommon chords (eg: http://all-guitar-chords.com/)  
 - Add variant chords (different fingers position for a same chord)  
 - Add fingers numbers  
+- Song.isChordsLine: remove chracters that can be found in chords such as "," "-" "_"
 - Add chords that have to be muted, following the format from https://lessons.com/guitar-lessons/guitar-chords/how-to-read-guitar-chords   
 - Take into account when the user just input chord lines without lyrics  
 - Add rhythms
