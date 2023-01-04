@@ -2,6 +2,7 @@ from .instruments import StringInstrument
 from .common import Notation, Chord
 from .song import Song, Verse
 import numpy as np
+from PIL import Image as PImage
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
@@ -14,6 +15,7 @@ import matplotlib.font_manager as fm
 import pathlib
 import os
 FONT_PATH = pathlib.Path(__file__).parent.absolute().joinpath("fonts")
+ASSET_PATH = pathlib.Path(__file__).parent.absolute().joinpath("assets")
 # Typing
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -157,7 +159,13 @@ DISTINCT_COLORS = {
     # 20 colors: darkslategray, darkgreen, firebrick, yellowgreen, darkblue, darkseagreen, red, darkorange, gold, lime
     #            mediumspringgreen, royalblue, darksalmon, aqua, deepskyblue, blue, thistle, fuchsia, deeppink, violet
     20: ("#2f4f4f", "#006400", "#b22222", "#9acd32", "#00008b", "#8fbc8f", "#ff0000", "#ff8c00", "#ffd700", "#00ff00",
-         "#00fa9a", "#4169e1", "#e9967a", "#00ffff", "#00bfff", "#0000ff", "#d8bfd8", "#ff00ff", "#ff1493", "#ee82ee")
+         "#00fa9a", "#4169e1", "#e9967a", "#00ffff", "#00bfff", "#0000ff", "#d8bfd8", "#ff00ff", "#ff1493", "#ee82ee"),
+    # 21 colors: dimgray, lightgray, darkred, olive, darkslateblue, green, darkblue, red, darkorange, gold
+    #            mediumorchid, springgreen, deepskyblue, blue, greenyellow, fuchsia, palevioletred, khaki, deeppink, lightsalmon
+    #            aquamarine
+    21: ("#696969", "#d3d3d3", "#8b0000", "#808000", "#483d8b", "#008000", "#00008b", "#ff0000", "#ff8c00", "#ffd700",
+         "#ba55d3", "#00ff7f", "#00bfff", "#0000ff", "#adff2f", "#ff00ff", "#db7093", "#f0e68c", "#ff1493", "#ffa07a",
+         "#7fffd4")
 }
 
 
@@ -171,6 +179,7 @@ class SongDrawer:
     landscape: bool = False
     design_vertical: bool = False
     chords_all_pages: bool = False
+    page_margin: float = 5 # mm
     background_opacity: float = 0.3 # (0: transparent, 1: opaque)
     title_height: float = 25 # mm
     title_fontfamily: str = "Dancing Script"
@@ -189,7 +198,7 @@ class SongDrawer:
     lyrics_chords_fontsize: float = 6
     lyrics_fontfamily: str = "Kurale"
     lyrics_fontsize: float = 10
-    lyrics_ha: str = "center",
+    lyrics_ha: str = "center"
     lyrics_nb_cols: int = 0
 
     def __post_init__(self):
@@ -237,17 +246,23 @@ class SongDrawer:
             height += 2 * self.chords_margin
         return(width, height)
 
+    def _getInstrumentNameHeight(self):
+        return font2mm(self.lyrics_fontsize) * 2
+
     def _getNbColumnRowChords(self, with_title: bool = True):
         chord_width, chord_height = self._getChordDimension(with_margin=True)
         nb_chords = len(self.chords_colors)
         if self.design_vertical:
             height = self.figsize[1]
+            height -= 2 * self.page_margin
+            height -= self._getInstrumentNameHeight()
             if with_title:
                 height -= self.title_height
             nb_rows = int(height / chord_height)
             nb_columns = int(np.ceil(nb_chords / nb_rows))
         else:
             width = self.figsize[0]
+            width -= 2 * self.page_margin
             nb_columns = int(width / chord_width)
             nb_rows = int(np.ceil(nb_chords / nb_columns))
         return(nb_rows, nb_columns)
@@ -261,23 +276,25 @@ class SongDrawer:
         if(self.grayscale):
             bg_img = np.dot(bg_img[..., :3], [0.2989, 0.5870, 0.1140])
             gsopts = {"cmap": 'gray', "vmin": 0, "vmax": 255.}
-        ax_background.imshow(bg_img, extent=[0, self.figsize[0], 0, self.figsize[1]], alpha=self.background_opacity, **gsopts)
+        ax_background.imshow(bg_img, extent=[0, self.figsize[0] - 2 * self.page_margin, 0, self.figsize[1] - 2 * self.page_margin], alpha=self.background_opacity, **gsopts)
 
     def _drawTitle(self, song: Song):
+        xmin, xmax = self.ax_title.get_xlim()
+        x_middle = (xmax - xmin ) / 2
         self.ax_title.text(
-            x=self.figsize[0] / 2.0,
+            x=x_middle,
             y=self.title_height / 2.0,
             s=f"{song.getTitle()} - {song.getArtist()}",
             **self.ptitle
         )
         if(song.isComposerSet()):
             self.ax_title.text(
-                x=self.figsize[0] / 2.0,
+                x=x_middle,
                 y=self.title_height * 4.0 / 5.0,
                 s=f"Composed by: {song.getComposer()}",
                 **self.pcomposer)
 
-    def _drawChordBox(self, ax, x, y, chordname, fontsize) -> Text:
+    def _drawChordBox(self, ax: Axes, x, y, chordname, fontsize) -> Text:
         if self.notation is not None:
             chordname = Chord.parse(chordname).getName(self.notation)
         color = self.chords_colors[chordname]
@@ -302,7 +319,7 @@ class SongDrawer:
             ind_row, ind_col = chords_indexes[ind_chord]
             # X and Y where to draw the chord
             x_offset = ind_col * (chord_width + 2 * self.chords_margin)
-            y_offset = ind_row * (chord_height + 2 * self.chords_margin)
+            y_offset = ind_row * (chord_height + 2 * self.chords_margin) + self._getInstrumentNameHeight()
             if x_offset < xmin: xmin = x_offset
             if y_offset < ymin: ymin = y_offset
             if x_offset + chord_width > xmax: xmax = x_offset + chord_width
@@ -331,7 +348,7 @@ class SongDrawer:
             x_string_zero = x_offset + self.chords_string_width / 2
             offset = max(0, max([int(f) for f in frets if f.upper() != 'X']) - nb_frets)
             if offset > 0:
-                self.ax_chords.text(x_string_zero - self.chords_string_spacing / 2, y_fret_zero, str(offset + 1), size=self.chords_fontsize, ha="center", va="center")
+                self.ax_chords.text(x_string_zero - self.chords_string_spacing / 2, y_fret_zero, str(offset + 1), size=self.chords_fontsize, weight='bold', color="gray", ha="center", va="center")
             for num_string, position in enumerate(frets):
                 xtemp = x_string_zero + num_string * self.chords_string_spacing
                 if(position.upper() in ["X", "0", "O"]):
@@ -344,12 +361,46 @@ class SongDrawer:
                 self.ax_chords.add_artist(mpatches.Circle((xtemp, ytemp), self.chords_finger_radius, color="dimgray", zorder=1))
         # Center the chords to the middle of the ax
         center_ax(self.ax_chords)
+        self._drawChordsInstruAndMaster(song)
+
+    def _drawChordsInstruAndMaster(self, song: Song):
+        xmin, _ = self.ax_chords.get_xlim()
+        ymax, ymin = self.ax_chords.get_ylim()
+        ih = self._getInstrumentNameHeight()
+        self.ax_chords.set_ylim([ymax - ih / 2, ymin - ih / 2])
+        instru_str = f"{self.instrument.name}"
+        p = self.plyrics.copy()
+        p["horizontalalignment"] = "left"
+        p["verticalalignment"] = "center"
+        img = PImage.open(os.path.join(ASSET_PATH, "guitar.png"))
+        data_color = np.array(img)
+        self.ax_chords.imshow(data_color, extent=[xmin + 5, xmin + 10, ymin + 2, ymin - 3], aspect='auto', resample=False)
+        instru_text = self.ax_chords.text(xmin + 12, ymin, s=instru_str, **p)
+        no_capo = song.getCapo()
+        if no_capo > 0:
+            width, _ = get_artists_dimension(self.ax_chords, [instru_text])
+            img = PImage.open(os.path.join(ASSET_PATH, "capo.png"))
+            data_color = np.array(img)
+            self.ax_chords.imshow(data_color, extent=[xmin + width + 14, xmin + width + 19, ymin + 2, ymin - 3], aspect='auto', resample=False)
+            if no_capo == 0:
+                capo_str = "No Capo"
+            elif no_capo == 1:
+                capo_str = "Capo: 1st fret"
+            elif no_capo == 2:
+                capo_str = "Capo: 2nd fret"
+            elif no_capo == 3:
+                capo_str = "Capo: 3rd fret"
+            else:
+                capo_str = f"Capo: {no_capo}th fret"
+            self.ax_chords.text(xmin + width + 21, ymin, s=capo_str, **p)
+        
 
     def _drawVerse(self, x: float, y: float, verse: Verse, with_chords: bool = True) -> Tuple[Text, List[Text], float]:
-        verse_text = verse.getText()
+        verse_text = verse.getTextLine()
         ltext = self.ax_lyrics.text(x, y, s=verse_text, **self.plyrics)
         lwidth, _ = get_artists_dimension(self.ax_lyrics, [ltext])
         ctexts = []
+        mini, maxi = verse.getMinMaxIndex()
         if with_chords:
             y_chord = y - self.lyrics_line_spacing / 4
             for chord in verse.getChords():
@@ -357,12 +408,18 @@ class SongDrawer:
                 # its width rendered in the axes in order to print the chord name to the right
                 # place whatever the font chosen
                 ind = chord.index
-                if(ind < len(verse_text)):
+                if verse.emptyText():
+                    ind -= int((maxi - mini) / 2)
+                if ind < 0:
+                    temp_text = "x" * abs(ind)
+                elif(ind < len(verse_text)):
                     temp_text = verse_text[:ind]
                 else:
                     temp_text = verse_text + "x" * (ind - len(verse_text))
                 textplt = self.ax_lyrics.text(x, y, temp_text, **self.plyrics)
                 cwidth, _ = get_artists_dimension(self.ax_lyrics, [textplt])
+                if ind < 0:
+                    cwidth = -cwidth
                 x_chord = x + cwidth
                 if("horizontalalignment" in self.plyrics):
                     if(self.plyrics["horizontalalignment"] == "center"):
@@ -385,15 +442,16 @@ class SongDrawer:
             nb_wraps: int = 0,
             max_width: float = 0) -> Tuple[List[Text], int, float]:
         if texts is None: texts = []
-        nb_words_removed = 0
+        possible_cuts = verse.getPossibleCutIndexes()[::-1]
+        ind_cut = 0
         ltext, ctexts, width = self._drawVerse(x, y, verse)
         verse_2 = None
         while(width > width_available):
             ltext.remove()
             for ctext in ctexts:
                 ctext.remove()
-            nb_words_removed += 1
-            verse_1, verse_2 = verse.splitByWords(nb_words_removed, from_end=True)
+            verse_1, verse_2 = verse.splitByIndex(possible_cuts[ind_cut])
+            ind_cut += 1
             ltext, ctexts, width = self._drawVerse(x, y, verse_1)
         if width > max_width:
             max_width = width
@@ -423,6 +481,7 @@ class SongDrawer:
                 nb_verses_written += 1
                 y += self.lyrics_line_spacing / 2
                 continue
+            logger.debug(f"Drawing verse {verse}")
             texts, nb_wraps, lwidth = self._drawVerseAutoWrapping(x, y, verse, full_width - margin * 2, full_height - margin * 2 - y)
             if lwidth > max_width:
                 max_width = lwidth
@@ -441,6 +500,7 @@ class SongDrawer:
         nb_verses_written_past = 0
         axs_past = []
         while True:
+            logger.debug(f"Trying to draw verses with {nb_cols} columns")
             nb_verses_written = 0
             nb_wraps_total = 0
             axs = []
@@ -502,20 +562,22 @@ class SongDrawer:
             is_first_page = len(self.figs) == 0
             fig = plt.figure(figsize=mm2inch(np.array(self.figsize)))
             self.figs.append(fig)
-            fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+            margin_w = self.page_margin / self.figsize[0]
+            margin_h = self.page_margin / self.figsize[1]
+            fig.subplots_adjust(left=margin_w, bottom=margin_h, right=1 - margin_w, top=1 - margin_h, wspace=0, hspace=0)
             if is_first_page or self.chords_all_pages:
                 nb_rows, nb_columns = self._getNbColumnRowChords(with_title=is_first_page)
                 if self.design_vertical:
                     chords_width = nb_columns * chord_width
-                    lyrics_height = self.figsize[1] - self.title_height
+                    lyrics_height = self.figsize[1] - 2 * self.page_margin - self.title_height
                     height_ratios = [self.title_height, lyrics_height] if is_first_page else [0, 1]
-                    lyrics_width = self.figsize[0] - chords_width
+                    lyrics_width = self.figsize[0] - 2 * self.page_margin - chords_width
                     gs = gridspec.GridSpec(2, 2, width_ratios=[lyrics_width, chords_width], height_ratios=height_ratios)
                     self.gs_lyrics = gs[1:, 0]
                     self.ax_chords = fig.add_subplot(gs[1:, 1])
                 else:
-                    chords_height = nb_rows * chord_height
-                    lyrics_height = self.figsize[1] - chords_height
+                    chords_height = nb_rows * chord_height + self._getInstrumentNameHeight()
+                    lyrics_height = self.figsize[1] - 2 * self.page_margin - chords_height
                     height_ratios = [0, chords_height, lyrics_height]
                     if is_first_page:
                         lyrics_height -= self.title_height

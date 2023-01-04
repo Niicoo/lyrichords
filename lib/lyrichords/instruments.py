@@ -37,6 +37,8 @@ class StringInstrument():
     def getFrets(self, chord: Union[Chord, str]):
         if not isinstance(chord, Chord):
             chord = Chord.parse(chord)
+        if chord not in self.frets.keys():
+            raise KeyError(f"The chord {chord} does not exists for the instrument '{self.name}'")
         return self.frets[chord]
     
     def getMaxFretsRange(self, chordnames: List[Union[Chord, str]] = []) -> int:
@@ -71,6 +73,7 @@ UKULELE_DGBE = StringInstrument("Baritone Ukulele", (Key.D, Key.G, Key.B, Key.E)
     "Cmaj7":  ["2413"], "C6":     ["2213"], "Cm6":     ["1213"],
     "Cadd9":  ["0010"], "Cm9":    ["0543"], "C9":      ["2333"],
     "Csus2":  ["0013"], "Csus4":  ["3011"], "C7sus4":  ["5566"],
+    "C/B":    ["2413"],
     # C#
     "C#":     ["3121"], "C#m":    ["2120"], "C#aug":   ["3221"],
     "C#dim":  ["2323"], "C#7":    ["3424"], "C#m7":    ["2424"],
@@ -83,6 +86,7 @@ UKULELE_DGBE = StringInstrument("Baritone Ukulele", (Key.D, Key.G, Key.B, Key.E)
     "Dmaj7":  ["0222"], "D6":     ["0202"], "Dm6":     ["0201"],
     "Dadd9":  ["0252"], "Dm9":    ["2231"], "D9":      ["2212"],
     "Dsus2":  ["0230"], "Dsus4":  ["0233"], "D7sus4":  ["0213"],
+    "Dm/C#":  ["0221"], "D/F#":   ["0232"], "Dm/F":    ["0231"],
     # Eb
     "Eb":     ["5343"], "Ebm":    ["4342"], "Ebaug":   ["2003"],
     "Ebdim":  ["1212"], "Eb7":    ["1323"], "Ebm7":    ["1322"],
@@ -113,6 +117,7 @@ UKULELE_DGBE = StringInstrument("Baritone Ukulele", (Key.D, Key.G, Key.B, Key.E)
     "Gmaj7":  ["0002"], "G6":     ["0000"], "Gm6":     ["0330"],
     "Gadd9":  ["0203"], "Gm9":    ["5335"], "G9":      ["0201"],
     "Gsus2":  ["0233"], "Gsus4":  ["0013"], "G7sus4":  ["0011"],
+    "G/B":    ["0003"],
     # G#
     "G#":     ["1114"], "G#m":    ["1444"], "G#aug":   ["2110"],
     "G#dim":  ["0101"], "G#7":    ["1112"], "G#m7":    ["1102"],

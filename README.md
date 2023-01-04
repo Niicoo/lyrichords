@@ -15,13 +15,13 @@ _(You can type: `python LyricsChords.py --help` to get more help on the commands
 
 # My to-do list  
 - Add feature: choose between writting sharp or flat chords (eg: C# instead of Db, etc...)   
-- Take into account chords written before the lyrics starts (For the moment, the minimum chord position is the first letter of the lyrics)  
 - Add others uncommon chords (eg: http://all-guitar-chords.com/)  
+- Add Chords C/B, etc...
+- Improve parsing chords robustness: Cmaj7 = C7M = CM7, etc...
 - Add variant chords (different fingers position for a same chord)  
 - Add fingers numbers  
 - Song.isChordsLine: remove chracters that can be found in chords such as "," "-" "_"
 - Add chords that have to be muted, following the format from https://lessons.com/guitar-lessons/guitar-chords/how-to-read-guitar-chords   
-- Take into account when the user just input chord lines without lyrics  
 - Add rhythms
 - Add Instrument name
 
@@ -36,5 +36,5 @@ Default instrument: Ukulele (GCEA tuning) + background + custom parameters:
 ![Example2](./examples/city_of_stars.png "Example: City Of Stars - LaLaLand")  
 
 Smaller page format:  
-`python LyricsChords.py ./examples/angel.txt --page_format A5`  
-![Example3](./examples/angel.png "Example: Angel - Jack Johnson")
+`python LyricsChords.py ./examples/compartir.txt --instrument UKULELE_DGBE --page_format A5 --lyrics_line_spacing 7.5 --title_height 11 --lyrics_fontsize 9 --chords_fret_spacing 3`  
+![Example3](./examples/compartir.png "Example: Compartir - Carla Morisson")

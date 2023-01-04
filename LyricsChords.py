@@ -29,7 +29,7 @@ def savefig2PDF(
         os.makedirs(out_path, exist_ok=True)
     with PdfPages(filepath) as pdf:
         for fig in figs:
-            pdf.savefig(fig)
+            pdf.savefig(fig, dpi=400)
     if close_figs:
         for fig in figs:
             plt.close(fig)
@@ -80,6 +80,10 @@ if __name__ == "__main__":
     parser.add_argument("--chords_all_pages", action="store_true", required=False,
         default=False,
         help="Option to draw the chords on all the pages [default: only the first page]"
+    )
+    parser.add_argument("--page_margin", type=float, required=False,
+        default=5.,
+        help="Margin of the border of the page of the in millimeters"
     )
     parser.add_argument("--background_opacity", type=float, required=False,
         default=0.3,
@@ -223,5 +227,6 @@ if __name__ == "__main__":
     # Generate the PDF files
     for in_file, out_file in filepaths:
         song = Song.fromFile(in_file)
+        logger.debug(song)
         figs = drawer.draw(song, background_path)
         savefig2PDF(figs, out_file, close_figs=True, create_out_path=True)

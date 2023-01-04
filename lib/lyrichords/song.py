@@ -1,5 +1,6 @@
 from .common import Chord
 import re
+import bisect 
 from collections import Counter
 from dataclasses import dataclass, field
 import logging
@@ -19,35 +20,95 @@ class ChordLocation():
     def __post_init__(self):
         self.chord = Chord.parse(self.name)
 
+    def getIndexLastLetter(self) -> int:
+        return self.index + len(self.name) - 1
+
+@dataclass
+class WordLocation():
+    word: str
+    index: int
+
+    def getIndexLastLetter(self) -> int:
+        return self.index + len(self.word) - 1
+
 class Verse():
     def __init__(self, text_line: str = "", chord_line: str = ""):
-        self.text: str = text_line.strip()
+        self.words: List[WordLocation] = []
         self.chords: List[ChordLocation] = []
-        k = 0
-        list_of_chords = chord_line.split()
-        for chordname in list_of_chords:
-            index = chord_line[k:].find(chordname)
-            self.addChord(chordname, k + index)
-            k = k + index + len(chordname)
+        # Detecting words positions
+        index = 0
+        for word in text_line.split(' '):
+            if word == "":
+                index += 1
+            else:
+                self.addWord(word, index)
+                index += len(word) + 1
+        # Detecting chords positions
+        index = 0
+        for chordname in chord_line.split(' '):
+            if chordname == "":
+                index += 1
+            else:
+                self.addChord(chordname, index)
+                index += len(chordname) + 1
+        # Ensure the first index is 0
+        self.resetIndex()
+
+    def resetIndex(self):
+        mini = 9999
+        if len(self.words) > 0:
+            mini = self.words[0].index
+        if len(self.chords) > 0:
+            mini = min(mini, self.chords[0].index)
+        if mini != 9999:
+            for k in range(0, len(self.words)):
+                self.words[k].index -= mini
+            for k in range(0, len(self.chords)):
+                self.chords[k].index -= mini
 
     def __str__(self):
         if self.isEmpty():
             return "Empty Line Verse"
-        text =   f"Verse : {self.text}"
-        _chords = ""
-        for chord in self.chords:
-            _chords += (chord.index - len(_chords)) * " " + chord.name
-        chords = f"Chords: {_chords}"
-        return text + "\n" + chords
+        _text = self.getTextLine()
+        _chords = self.getChordsLine()
+        text =   f"Text: ->{_text}<-"
+        chords = f"Chords: ->{_chords}<-"
+        return text + "   " + chords
 
     def __repr__(self):
         return self.__str__()
 
-    def setText(self, text: str):
-        self.text = text
+    def emptyText(self) -> bool:
+        return len(self.words) == 0
 
-    def getText(self) -> str:
-        return(self.text)
+    def getMinMaxIndex(self) -> Tuple[int, int]:
+        mini = None
+        maxi = None
+        for word in self.words + self.chords:
+            if mini is None:
+                mini = word.index
+            if maxi is None:
+                maxi = word.getIndexLastLetter()
+            if word.index < mini:
+                mini = word.index
+            if word.getIndexLastLetter() > maxi:
+                maxi = word.getIndexLastLetter()
+        return(mini, maxi)
+
+    def getTextLine(self) -> str:
+        _text = ""
+        for word in self.words:
+            _text += (word.index - len(_text)) * " " + word.word
+        return(_text)
+
+    def getChordsLine(self) -> str:
+        _chords = ""
+        for chord in self.chords:
+            _chords += (chord.index - len(_chords)) * " " + chord.name
+        return(_chords)
+
+    def getWords(self) -> List[ChordLocation]:
+        return(self.words)
 
     def getChords(self) -> List[ChordLocation]:
         return(self.chords)
@@ -55,59 +116,59 @@ class Verse():
     def addChord(self, chordname: str, index: int):
         self.chords.append(ChordLocation(chordname, index))
 
+    def addWord(self, word: str, index: int):
+        self.words.append(WordLocation(word, index))
+
     def isEmpty(self) -> bool:
-        return not self.text
+        return (len(self.words) == 0) and (len(self.chords) == 0)
 
     def getChordList(self) -> List[str]:
         return [chord.name for chord in self.chords]
 
-    def split(self, index: int) -> Tuple["Verse", "Verse"]:
-        if(index > (len(self.text) - 1)):
-            raise ValueError("Index cannot be superior to the text length")
-        text1 = ""
-        text2 = ""
-        next_ind = 0
-        for word in self.text.split(" "):
-            next_ind += 0 if (next_ind == 0) else 1
-            next_ind += len(word)
-            if(next_ind <= index):
-                text1 += " " if text1 else ""
-                text1 += word
+    def splitByIndex(self, index: int) -> Tuple["Verse", "Verse"]:
+        """
+            Index where to cut the verse
+        """
+        verse1 = Verse()
+        verse2 = Verse()
+        for word in self.words:
+            if word.getIndexLastLetter() <= index:
+                verse1.addWord(word.word, word.index)
             else:
-                text2 += " " if text2 else ""
-                text2 += word
-        verse1 = Verse(text1)
-        verse2 = Verse(text2)
+                verse2.addWord(word.word, word.index)
         for chord in self.chords:
-            if(chord.index < len(text1)):
+            chord_index = chord.index
+            if chord_index <= index:
+                for word in self.words:
+                    if (chord.index >= word.index) and (chord.index <= word.getIndexLastLetter()):
+                        chord_index = word.getIndexLastLetter()
+            if chord_index <= index:
                 verse1.addChord(chord.name, chord.index)
             else:
-                verse2.addChord(chord.name, chord.index - len(text1) - 1)
+                verse2.addChord(chord.name, chord.index)
+        verse1.resetIndex()
+        verse2.resetIndex()
         return verse1, verse2
 
-    def splitByWords(self, nb_words: int, from_end: bool = True) -> Tuple["Verse", "Verse"]:
-        words = self.text.split(" ")
-        regex = re.compile('[^a-zA-Z]')
-        words_fmt = [regex.sub('', word) for word in words]
-        def count_nb_true_words(words):
-            nb_words = 0
-            for word in words:
-                if(word != ''):
-                    nb_words += 1
-            return nb_words
-        if count_nb_true_words(words_fmt) == nb_words:
-            raise ValueError("Number of words to split exceeded")
-        if from_end:
-            for ind in range(len(words_fmt) - 1, -1, -1):
-                nb_true_words = count_nb_true_words(words_fmt[ind:])
-                if nb_true_words == nb_words:
-                    break
-        else:
-            for ind in range(len(words_fmt), 0, -1):
-                nb_true_words = count_nb_true_words(words_fmt[:ind])
-                if nb_true_words == nb_words:
-                    break
-        return self.split(len(" ".join(words[:ind])))
+    def getPossibleCutIndexes(self) -> List[int]:
+        indexes = []
+        for ind_word, word in enumerate(self.words):
+            last_letter_index = word.getIndexLastLetter()
+            if ind_word < (len(self.words) - 1):
+                indexes.append(last_letter_index)
+            else:
+                for chord in self.chords:
+                    if chord.index > last_letter_index:
+                        indexes.append(last_letter_index)
+                        break
+        for chord in self.chords:
+            chord_index = chord.index
+            for word in self.words:
+                if (chord.index >= word.index) and (chord.index <= word.getIndexLastLetter()):
+                    chord_index = word.getIndexLastLetter()
+            if chord_index not in indexes:
+                bisect.insort(indexes, chord_index)
+        return indexes
 
 
 class Song():
@@ -164,9 +225,14 @@ class Song():
         return(self.capo)
 
     def addVerse(self, verse: Verse) -> None:
-        if(len(self.verses) == 0 and verse.isEmpty()):
-            logger.info("Empty line ignored")
-            return
+        if verse.isEmpty():
+            if len(self.verses) == 0:
+                logger.debug("Empty line ignored")
+                return
+            elif self.verses[-1].isEmpty():
+                logger.debug("Empty line ignored")
+                return
+        logger.debug(f"Adding Verse: {verse}")
         self.verses.append(verse)
 
     def setVerses(self, verses: List[Verse]):
@@ -205,77 +271,82 @@ class Song():
         previous_line = ""
         for line in lines:
             # IF Line is metadata (Capo, Title, etc...)
-            if(len(line) > 5):
+            if(len(line) >= 5):
                 if(line[0:5].upper() == "CAPO:"):
                     capo_str = line[5:].strip()
                     if capo_str == '': continue
                     song.setCapo(int(capo_str))
                     continue
-            if(len(line) > 6):
+            if(len(line) >= 6):
                 if(line[0:6].upper() == "TITLE:"):
                     song.setTitle(line[6:].strip())
                     continue
-            if(len(line) > 7):
+            if(len(line) >= 7):
                 if(line[0:7].upper() == "ARTIST:"):
                     song.setArtist(line[7:].strip())
                     continue
-            if(len(line) > 9):
+            if(len(line) >= 9):
                 if(line[0:9].upper() == "COMPOSER:"):
                     song.setComposer(line[9:].strip())
                     continue
-            # IF Empty line
-            if not line.strip():
-                song.addVerse(Verse())
-                continue
-            if(Song.isChordsLine(line)):
-                if(lyrics_first):
-                    # Lyrics First - (previous)None -> Chords
+            is_empty_line = not line.strip()
+            is_chords_line = Song.isChordsLine(line)
+            if(lyrics_first):
+                if is_empty_line:
+                    # Empty Line
+                    if previous_line:
+                        song.addVerse(Verse(text_line=previous_line))
+                    song.addVerse(Verse())
+                    previous_line = ""
+                elif is_chords_line:
+                    # Chords Line
                     if not previous_line:
-                        raise ValueError("Expecting a previous lyrics line")
-                    # Lyrics First - (previous)Chords -> Chords
-                    elif Song.isChordsLine(previous_line):
-                        raise ValueError("Expecting a previous lyrics line")
-                    # Lyrics First - (previous)Lyrics -> Chords
+                        # Lyrics First - (previous)None -> Chords
+                        # => Chord line without lyrics
+                        song.addVerse(Verse(text_line="", chord_line=line))
                     else:
+                        # Lyrics First - (previous)Lyrics -> Chords
                         song.addVerse(Verse(text_line=previous_line, chord_line=line))
                         previous_line = ""
                 else:
-                    # Chords First - (previous)None -> Chords
+                    # Lyrics Line
                     if not previous_line:
+                        # Lyrics First - (previous)None -> Lyrics
                         previous_line = line
-                    # Chords First - (previous)Chords -> Chords
-                    elif Song.isChordsLine(previous_line):
-                        raise ValueError("Expecting a lyrics line: Got 2 consecutives chords lines")
-                    # Chords First - (previous)Lyrics -> Chords
                     else:
-                        raise ValueError("Well this error should never happened")
-            else:
-                if(lyrics_first):
-                    # Lyrics First - (previous)None -> Lyrics
-                    if not previous_line:
-                        previous_line = line
-                    # Lyrics First - (previous)Chords -> Lyrics
-                    elif Song.isChordsLine(previous_line):
-                        raise ValueError("Wrong file format: Got Lyrics line after a Chords line.")
-                    # Lyrics First - (previous)Lyrics -> Lyrics
-                    else:
+                        # Lyrics First - (previous)Lyrics -> Lyrics
                         song.addVerse(Verse(text_line=previous_line))
                         previous_line = line
-                else:
-                    # Chords First - (previous)None -> Lyrics
+            else:
+                if is_empty_line:
+                    # Empty Line
+                    if previous_line:
+                        song.addVerse(Verse(text_line="", chord_line=previous_line))
+                    song.addVerse(Verse())
+                    previous_line = ""
+                elif is_chords_line:
                     if not previous_line:
+                        # Chords First - (previous)None -> Chords
+                        previous_line = line
+                    else:
+                        # Chords First - (previous)Chords -> Chords
+                        # => Chord line without lyrics
+                        song.addVerse(Verse(text_line="", chord_line=previous_line))
+                        previous_line = line
+                else:
+                    if not previous_line:
+                        # Chords First - (previous)None -> Lyrics
                         song.addVerse(Verse(text_line=line))
-                    # Chords First - (previous)Chords -> Lyrics
-                    elif Song.isChordsLine(previous_line):
+                    else:
+                        # Chords First - (previous)Chords -> Lyrics
                         song.addVerse(Verse(text_line=line, chord_line=previous_line))
                         previous_line = ""
-                    # Chords First - (previous)Lyrics -> Lyrics
-                    else:
-                        raise ValueError("Well this error should never happened either")
         if(previous_line):
             if Song.isChordsLine(previous_line):
-                raise ValueError("Got chords at the end... weird")
-            song.addVerse(Verse(text_line=previous_line))
+                song.addVerse(Verse(chord_line=previous_line))
+            else:
+                song.addVerse(Verse(text_line=previous_line))
+
         return song
 
     def isComposerSet(self) -> bool:
