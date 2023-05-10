@@ -19,7 +19,7 @@ _(You can type: `python LyricsChords.py --help` to get more help on the commands
 Build the image:
 `sudo docker build -t lyrichords:latest .`
 Run the program as below:
-`sudo docker run -v /home/ndejax/work/lyrichords/examples:/app/shared --rm --name mycontainer lyrichords:latest /app/shared/anglel.txt`
+`sudo docker run -v /path/to/lyrichords/examples:/app/shared --rm --name mycontainer lyrichords:latest /app/shared/anglel.txt`
 
 
 
