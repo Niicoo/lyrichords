@@ -6,11 +6,21 @@ Create conda environment:
 
 
 # Usage
+
+## Using a local conda environment
 Activate conda environement:  
 `conda activate lyrichords_env`  
 Use the script `LyricsChords.py` to generated a PDF file:  
 `python LyricsChords.py ./examples/anglel.txt`  
 _(You can type: `python LyricsChords.py --help` to get more help on the commands)_  
+
+
+## Using conda inside a Docker container
+Build the image:
+`sudo docker build -t lyrichords:latest .`
+Run the program as below:
+`sudo docker run -v /home/ndejax/work/lyrichords/examples:/app/shared --rm --name mycontainer lyrichords:latest /app/shared/anglel.txt`
+
 
 
 # My to-do list  

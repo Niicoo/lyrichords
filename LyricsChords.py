@@ -27,6 +27,7 @@ def savefig2PDF(
     if create_out_path:
         out_path = pathlib.Path(filepath).parent.as_posix()
         os.makedirs(out_path, exist_ok=True)
+        logger.info(f"Saving file: {filepath}")
     with PdfPages(filepath) as pdf:
         for fig in figs:
             pdf.savefig(fig, dpi=400)
